@@ -4,11 +4,12 @@
   "version": "1.0.0",
   "documentation": "https://github.com/gabest11/homeassistant-brother_scanner",
   "issue_tracker": "https://github.com/gabest11/homeassistant-brother_scanner/issues",
-  "requirements": [],
+  "requirements": ["aiohttp>=3.8.0"],
   "dependencies": [],
   "codeowners": [
     "@gabest11"
   ],
   "config_flow": true,
-  "iot_class": "local_polling"
+  "iot_class": "local_polling",
+  "icon": "mdi:scanner"
 }
