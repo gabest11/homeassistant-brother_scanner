@@ -1,0 +1,14 @@
+{
+  "domain": "brother_scanner",
+  "name": "Brother DCP-1610W",
+  "version": "1.0.0",
+  "documentation": "https://github.com/gabest11/homeassistant-brother_scanner",
+  "issue_tracker": "https://github.com/gabest11/homeassistant-brother_scanner/issues",
+  "requirements": [],
+  "dependencies": [],
+  "codeowners": [
+    "@gabest11"
+  ],
+  "config_flow": true,
+  "iot_class": "local_polling"
+}

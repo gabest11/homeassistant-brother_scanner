@@ -1,0 +1,9 @@
+{
+  "name": "Brother DCP-1610W Scanner",
+  "content_in_root": false,
+  "render_readme": true,
+  "domains": [
+    "brother_scanner"
+  ],
+  "iot_class": "local_polling"
+}

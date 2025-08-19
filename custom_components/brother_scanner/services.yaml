@@ -1,0 +1,18 @@
+﻿snapshot:
+  name: Take Snapshot
+  description: Fetch a JPEG snapshot from the scanner.
+  fields:
+    ip:
+      name: Device IP
+      description: The registered IP address of the scanner.
+      required: true
+      example: "192.168.1.50"
+      selector:
+        text:
+    filename:
+      name: Filename
+      description: The path and name of the file to save under www/snapshot.
+      required: false
+      example: "/config/www/snapshots/snapshot_192.168.1.50.jpg"
+      selector:
+        text:
