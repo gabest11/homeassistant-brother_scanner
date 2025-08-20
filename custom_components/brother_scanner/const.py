@@ -1,3 +1,3 @@
-DOMAIN = "custom_brother_scanner"
+DOMAIN = "brother_scanner"
 MANUFACTURER = "Brother"
 MODEL = "DCP-1610W"

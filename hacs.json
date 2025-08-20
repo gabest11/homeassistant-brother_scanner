@@ -3,7 +3,7 @@
   "content_in_root": false,
   "render_readme": true,
   "domains": [
-    "custom_brother_scanner"
+    "brother_scanner"
   ],
   "iot_class": "local_polling"
 }
