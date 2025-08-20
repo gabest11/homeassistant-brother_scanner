@@ -2,13 +2,10 @@ import re
 import uuid
 import aiohttp
 import asyncio
-import logging
 import socket
 from typing import Optional
 from zeroconf import ServiceBrowser
 from homeassistant.components import zeroconf as ha_zeroconf
-
-_LOGGER = logging.getLogger(__name__)
 
 
 # --- SOAP XML templates ---
@@ -159,7 +156,7 @@ async def scan_jpeg(ip: str) -> bytes:
 
 
 async def find_brother_printer(
-    hass, model_name: str, timeout: int = 5
+    hass, model_name: str, timeout: int = 10
 ) -> Optional[str]:
     """Use Home Assistant's zeroconf instance to find a Brother printer by model name."""
     ip: Optional[str] = None

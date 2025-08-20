@@ -3,8 +3,7 @@ import logging
 import ipaddress
 import re
 from homeassistant import config_entries
-from homeassistant.core import callback
-from .const import DOMAIN, MODEL, DEVICE
+from .const import DOMAIN, MODEL, MANUFACTURER
 from .api import find_brother_printer
 
 _LOGGER = logging.getLogger(__name__)
@@ -26,7 +25,7 @@ class BrotherScannerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(self, user_input=None):
         if user_input is None:
-            detected_ip = await find_brother_printer(self.hass, MODEL, timeout=5)
+            detected_ip = await find_brother_printer(self.hass, MODEL)
 
             if detected_ip:
                 _LOGGER.info("Auto-detected Brother printer at %s", detected_ip)
@@ -48,6 +47,6 @@ class BrotherScannerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._abort_if_unique_id_configured()
 
         return self.async_create_entry(
-            title=f"{DEVICE} ({ip})",
+            title=f"{MANUFACTURER} {MODEL} Scanner ({ip})",
             data={"ip": ip},
         )

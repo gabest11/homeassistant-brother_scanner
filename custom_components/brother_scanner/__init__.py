@@ -1,10 +1,11 @@
 import asyncio
 import logging
+import datetime
+import os
 import voluptuous as vol
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers.device_registry import DeviceRegistry, async_get
 from .const import DOMAIN
-from .button import fetch_and_return_jpeg
+from .api import scan_jpeg
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -21,30 +22,19 @@ async def async_setup_entry(hass, entry):
         "entities": [],
     }
 
-    # Setup button platform
-    await hass.config_entries.async_forward_entry_setups(entry, ["button"])
+    # Forward entities to HA
+    await hass.config_entries.async_forward_entry_setups(entry, ["button", "sensor"])
 
     # Register snapshot service once
     if not hass.services.has_service(DOMAIN, "snapshot"):
 
-        async def snapshot_service(call):
-            ip = call.data["ip"]
-            filename = call.data.get("filename")
-
-            # Find device by IP
-            device_data = next(
-                (d for d in hass.data[DOMAIN].values() if d["ip"] == ip), None
-            )
-            if not device_data:
-                raise HomeAssistantError(f"Device {ip} not found")
-            lock = device_data["lock"]
-
-            await fetch_and_return_jpeg(hass, ip, filename, lock)
+        async def snapshot_service_wrapper(call):
+            await snapshot_service(hass, call)
 
         hass.services.async_register(
             DOMAIN,
             "snapshot",
-            snapshot_service,
+            snapshot_service_wrapper,
             schema=vol.Schema(
                 {vol.Required("ip"): str, vol.Optional("filename"): str},
                 extra=vol.ALLOW_EXTRA,
@@ -57,5 +47,56 @@ async def async_setup_entry(hass, entry):
 async def async_unload_entry(hass, entry):
     """Unload a config entry."""
     await hass.config_entries.async_forward_entry_unload(entry, "button")
+    await hass.config_entries.async_forward_entry_unload(entry, "sensor")
     hass.data[DOMAIN].pop(entry.entry_id, None)
     return True
+
+
+async def snapshot_service(hass, call):
+    ip = call.data["ip"]
+    filename = call.data.get("filename")
+
+    # Find device by IP
+    device_data = next((d for d in hass.data[DOMAIN].values() if d["ip"] == ip), None)
+    if not device_data:
+        raise HomeAssistantError(f"Device {ip} not found")
+    lock = device_data["lock"]
+
+    if lock.locked():
+        _LOGGER.warning("Snapshot already running for %s, skipping call", ip)
+        return
+
+    async with lock:
+        try:
+            jpeg_bytes = await scan_jpeg(ip)
+
+            if not filename:
+                now = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = f"snapshot_{ip}_{now}.jpg"
+
+            # If filename is not absolute, save inside HA www/snapshots
+            if not os.path.isabs(filename):
+                filename = hass.config.path("www", "snapshots", filename)
+
+            dir_path = os.path.dirname(filename)
+            os.makedirs(dir_path, exist_ok=True)
+
+            def write_file():
+                with open(filename, "wb") as f:
+                    f.write(jpeg_bytes)
+
+            # Save file in executor to avoid blocking event loop
+            await hass.async_add_executor_job(write_file)
+
+            _LOGGER.info("Snapshot saved: %s", filename)
+
+            hass.bus.async_fire(
+                f"{DOMAIN}_snapshot_saved", {"ip": ip, "filename": filename}
+            )
+
+        except OSError as e:
+            _LOGGER.error("Failed to save snapshot for %s: %s", ip, e)
+            raise HomeAssistantError(f"Failed to save snapshot: {e}")
+        except Exception as e:
+            _LOGGER.error("Unexpected error during snapshot for %s: %s", ip, e)
+            raise HomeAssistantError(f"Unexpected error: {e}")
