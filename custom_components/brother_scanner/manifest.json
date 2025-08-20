@@ -1,6 +1,6 @@
 {
   "domain": "brother_scanner",
-  "name": "Brother DCP-1610W",
+  "name": "Brother DCP-1610W Scanner",
   "version": "1.0.1",
   "documentation": "https://github.com/gabest11/homeassistant-brother_scanner",
   "issue_tracker": "https://github.com/gabest11/homeassistant-brother_scanner/issues",

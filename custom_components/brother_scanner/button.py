@@ -1,6 +1,6 @@
 from homeassistant.components.button import ButtonEntity
 from homeassistant.helpers.entity import DeviceInfo
-from .const import DOMAIN, MANUFACTURER, MODEL
+from .const import DOMAIN, MANUFACTURER, MODEL, DEVICE
 from .api import scan_jpeg
 import datetime
 import logging
@@ -34,7 +34,7 @@ class BrotherScannerButton(ButtonEntity):
     def device_info(self):
         return DeviceInfo(
             identifiers={(DOMAIN, self._entry_id)},
-            name=f"{MANUFACTURER} {MODEL} ({self._ip})",
+            name=f"{DEVICE} ({self._ip})",
             manufacturer=MANUFACTURER,
             model=MODEL,
             configuration_url=f"http://{self._ip}",

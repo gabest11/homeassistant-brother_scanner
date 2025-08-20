@@ -3,7 +3,7 @@ import logging
 import voluptuous as vol
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.device_registry import DeviceRegistry, async_get
-from .const import DOMAIN, MANUFACTURER, MODEL
+from .const import DOMAIN
 from .button import fetch_and_return_jpeg
 
 _LOGGER = logging.getLogger(__name__)

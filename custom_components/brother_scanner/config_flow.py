@@ -4,7 +4,7 @@ import ipaddress
 import re
 from homeassistant import config_entries
 from homeassistant.core import callback
-from .const import DOMAIN, MANUFACTURER, MODEL
+from .const import DOMAIN, MODEL, DEVICE
 from .api import find_brother_printer
 
 _LOGGER = logging.getLogger(__name__)
@@ -48,6 +48,6 @@ class BrotherScannerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._abort_if_unique_id_configured()
 
         return self.async_create_entry(
-            title=f"{MANUFACTURER} {MODEL} ({ip})",
+            title=f"{DEVICE} ({ip})",
             data={"ip": ip},
         )
