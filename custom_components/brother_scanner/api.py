@@ -1,6 +1,15 @@
 import re
 import uuid
 import aiohttp
+import asyncio
+import logging
+import socket
+from typing import Optional
+from zeroconf import ServiceBrowser
+from homeassistant.components import zeroconf as ha_zeroconf
+
+_LOGGER = logging.getLogger(__name__)
+
 
 # --- SOAP XML templates ---
 GET_SCANNER_STATUS_XML = """<?xml version="1.0" encoding="utf-8"?>
@@ -147,3 +156,33 @@ async def scan_jpeg(ip: str) -> bytes:
         )
         resp_bytes = await async_soap_request(session, url, xml)
         return extract_jpeg_from_mtom(resp_bytes)
+
+
+async def find_brother_printer(
+    hass, model_name: str, timeout: int = 5
+) -> Optional[str]:
+    """Use Home Assistant's zeroconf instance to find a Brother printer by model name."""
+    ip: Optional[str] = None
+    stop_event = asyncio.Event()
+
+    def _on_service_add(zeroconf, service_type: str, name: str, *args, **kwargs):
+        nonlocal ip
+        if model_name not in name:
+            return
+        info = zeroconf.get_service_info(service_type, name)
+        if info and info.addresses:
+            ip = socket.inet_ntoa(info.addresses[0])
+            hass.loop.call_soon_threadsafe(stop_event.set)
+
+    # Use HA’s shared Zeroconf instance
+    zc = await ha_zeroconf.async_get_instance(hass)
+    browser = ServiceBrowser(zc, "_printer._tcp.local.", handlers=[_on_service_add])
+
+    try:
+        await asyncio.wait_for(stop_event.wait(), timeout)
+    except asyncio.TimeoutError:
+        pass
+    finally:
+        browser.cancel()  # Clean up the browser to avoid resource leaks
+
+    return ip
