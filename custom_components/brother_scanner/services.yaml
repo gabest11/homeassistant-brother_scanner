@@ -6,13 +6,13 @@
       name: Device IP
       description: The registered IP address of the scanner.
       required: true
-      example: "192.168.1.50"
+      example: "192.168.0.42 or the host name"
       selector:
         text:
     filename:
       name: Filename
-      description: The path and name of the file to save under www/snapshot.
+      description: The path and name of the file to save, relative paths are put under www. Default is similar to the example, with the current date and time.
       required: false
-      example: "/config/www/snapshots/snapshot_192.168.1.50.jpg"
+      example: "/config/www/scans/192.168.0.42_20250820_183714.jpg"
       selector:
         text:

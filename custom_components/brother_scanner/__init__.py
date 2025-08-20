@@ -72,11 +72,11 @@ async def snapshot_service(hass, call):
 
             if not filename:
                 now = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-                filename = f"snapshot_{ip}_{now}.jpg"
+                filename = f"scans/{ip}_{now}.jpg"
 
-            # If filename is not absolute, save inside HA www/snapshots
+            # If filename is not absolute, save inside HA www
             if not os.path.isabs(filename):
-                filename = hass.config.path("www", "snapshots", filename)
+                filename = hass.config.path("www", filename)
 
             dir_path = os.path.dirname(filename)
             os.makedirs(dir_path, exist_ok=True)
