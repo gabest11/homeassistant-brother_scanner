@@ -4,7 +4,8 @@ import datetime
 import os
 import voluptuous as vol
 from homeassistant.exceptions import HomeAssistantError
-from .const import DOMAIN
+from homeassistant.helpers import storage
+from .const import DOMAIN, STORAGE_VERSION, STORAGE_KEY_TEMPLATE
 from .api import scan_jpeg
 
 _LOGGER = logging.getLogger(__name__)
@@ -20,10 +21,11 @@ async def async_setup_entry(hass, entry):
         "ip": ip,
         "lock": asyncio.Lock(),
         "entities": [],
+        "entry_id": entry_id,
     }
 
     # Forward entities to HA
-    await hass.config_entries.async_forward_entry_setups(entry, ["button", "sensor"])
+    await hass.config_entries.async_forward_entry_setups(entry, ["button", "camera"])
 
     # Register snapshot service once
     if not hass.services.has_service(DOMAIN, "snapshot"):
@@ -47,7 +49,7 @@ async def async_setup_entry(hass, entry):
 async def async_unload_entry(hass, entry):
     """Unload a config entry."""
     await hass.config_entries.async_forward_entry_unload(entry, "button")
-    await hass.config_entries.async_forward_entry_unload(entry, "sensor")
+    await hass.config_entries.async_forward_entry_unload(entry, "camera")
     hass.data[DOMAIN].pop(entry.entry_id, None)
     return True
 
@@ -60,7 +62,9 @@ async def snapshot_service(hass, call):
     device_data = next((d for d in hass.data[DOMAIN].values() if d["ip"] == ip), None)
     if not device_data:
         raise HomeAssistantError(f"Device {ip} not found")
+
     lock = device_data["lock"]
+    entry_id = device_data["entry_id"]
 
     if lock.locked():
         _LOGGER.warning("Snapshot already running for %s, skipping call", ip)
@@ -71,7 +75,7 @@ async def snapshot_service(hass, call):
             jpeg_bytes = await scan_jpeg(ip)
 
             if not filename:
-                now = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                now = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
                 filename = f"scans/{ip}_{now}.jpg"
 
             # If filename is not absolute, save inside HA www
@@ -89,6 +93,12 @@ async def snapshot_service(hass, call):
             await hass.async_add_executor_job(write_file)
 
             _LOGGER.info("Snapshot saved: %s", filename)
+
+            # Save to HA storage for persistence
+            store = storage.Store(
+                hass, STORAGE_VERSION, STORAGE_KEY_TEMPLATE.format(entry_id=entry_id)
+            )
+            await store.async_save({"last_snapshot": filename})
 
             hass.bus.async_fire(
                 f"{DOMAIN}_snapshot_saved", {"ip": ip, "filename": filename}
