@@ -1,0 +1,16 @@
+{
+  "en": {
+    "config": {
+      "step": {
+        "zeroconf_confirm": {
+          "title": "Discovered Brother Printer",
+          "description": "A new {model} printer was discovered at {host}. Do you want to configure it?"
+        },
+        "user": {
+          "title": "Manual Configuration",
+          "description": "Enter the IP address or hostname of your {manufacturer} {model} printer."
+        }
+      }
+    }
+  }
+}

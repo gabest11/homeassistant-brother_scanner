@@ -1,7 +1,7 @@
 {
   "domain": "brother_scanner",
   "name": "Brother DCP-1610W Scanner",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "documentation": "https://github.com/gabest11/homeassistant-brother_scanner",
   "issue_tracker": "https://github.com/gabest11/homeassistant-brother_scanner/issues",
   "requirements": ["aiohttp>=3.8.0"],
@@ -9,6 +9,9 @@
   "codeowners": [
     "@gabest11"
   ],
+  "zeroconf": [
+    "_printer._tcp.local."
+  ],  
   "config_flow": true,
   "iot_class": "local_polling",
   "icon": "mdi:scanner"

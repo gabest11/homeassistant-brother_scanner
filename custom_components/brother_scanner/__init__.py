@@ -1,11 +1,11 @@
+import voluptuous as vol
 import asyncio
 import logging
 import datetime
 import os
-import voluptuous as vol
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import storage
-from .const import DOMAIN, STORAGE_VERSION, STORAGE_KEY_TEMPLATE
+from .const import DOMAIN, STORAGE_VERSION, STORAGE_KEY_TEMPLATE, SCANS_DIR
 from .api import scan_jpeg
 
 _LOGGER = logging.getLogger(__name__)
@@ -76,7 +76,7 @@ async def snapshot_service(hass, call):
 
             if not filename:
                 now = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-                filename = f"scans/{ip}_{now}.jpg"
+                filename = f"{SCANS_DIR}/{ip}_{now}.jpg"
 
             # If filename is not absolute, save inside HA www
             if not os.path.isabs(filename):

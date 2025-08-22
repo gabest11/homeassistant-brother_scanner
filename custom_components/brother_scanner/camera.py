@@ -2,6 +2,8 @@ import logging
 import os
 import time
 import functools
+import io
+from PIL import Image
 from homeassistant.components.camera import Camera
 from homeassistant.helpers import storage
 from .device import get_device_info
@@ -56,15 +58,25 @@ class BrotherScannerLastSnapshot(Camera):
                 "Restored last snapshot for %s: %s", self._ip, self._file_path
             )
             self.async_write_ha_state()
+        else:
+            _LOGGER.debug("No snapshot found for %s yet", self._ip)
 
     async def async_camera_image(self, width=None, height=None):
         """Return the latest snapshot image bytes (non-blocking)."""
         if not self._file_path or not os.path.exists(self._file_path):
+            _LOGGER.warning("Camera image file missing for %s", self._ip)
             return None
 
-        def read_file(path):
-            with open(path, "rb") as f:
-                return f.read()
+        def read_file(p):
+            with open(p, "rb") as f:
+                data = f.read()
+            if width and height and width > 0 and height > 0:
+                img = Image.open(io.BytesIO(data))
+                img = img.resize((width, height))
+                buf = io.BytesIO()
+                img.save(buf, format="PNG")
+                return buf.getvalue()
+            return data
 
         try:
             return await self._hass.async_add_executor_job(
@@ -76,8 +88,8 @@ class BrotherScannerLastSnapshot(Camera):
 
     @property
     def available(self):
-        """Camera is available if the last snapshot exists."""
-        return bool(self._file_path and os.path.exists(self._file_path))
+        """Camera is available if a snapshot exists."""
+        return self._file_path and os.path.exists(self._file_path)
 
     @property
     def entity_picture(self):
@@ -94,7 +106,9 @@ class BrotherScannerLastSnapshot(Camera):
     def extra_state_attributes(self):
         """Expose timestamp so frontend refreshes still images."""
         return {
-            "last_update": int(self._last_update_ts) if self._last_update_ts else None
+            "last_update": (
+                int(self._last_update_ts) if self._last_update_ts else int(time.time())
+            )
         }
 
     async def _handle_snapshot_saved(self, event):
@@ -106,4 +120,14 @@ class BrotherScannerLastSnapshot(Camera):
         self._file_path = filename
         self._last_update_ts = time.time()
         _LOGGER.debug("Refreshing camera entity for %s: %s", self._ip, self._file_path)
+        self.async_write_ha_state()
+
+        # Save the last snapshot path to storage
+        store = storage.Store(
+            self._hass,
+            STORAGE_VERSION,
+            STORAGE_KEY_TEMPLATE.format(entry_id=self._entry_id),
+        )
+        await store.async_save({"last_snapshot": self._file_path})
+
         self.async_write_ha_state()
