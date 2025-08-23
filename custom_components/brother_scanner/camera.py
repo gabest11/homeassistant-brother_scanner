@@ -14,8 +14,7 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up the Brother scanner camera entity."""
-    ip = entry.data["ip"]
-    camera = BrotherScannerLastSnapshot(hass, ip, entry.entry_id)
+    camera = BrotherScannerLastSnapshot(hass, entry)
     async_add_entities([camera], update_before_add=True)
 
 
@@ -24,14 +23,15 @@ class BrotherScannerLastSnapshot(Camera):
 
     _attr_has_entity_name = True
 
-    def __init__(self, hass, ip, entry_id):
+    def __init__(self, hass, entry):
         super().__init__()
         self._hass = hass
-        self._ip = ip
-        self._entry_id = entry_id
+        self._ip = entry.data["ip"]
+        self._hostname = entry.data.get("hostname", self._ip)
+        self._entry_id = entry.entry_id
         self._attr_name = "Last Snapshot"
-        self._attr_unique_id = f"{entry_id}_last_snapshot"
-        self._attr_device_info = get_device_info(entry_id, ip)
+        self._attr_unique_id = f"{self._entry_id}_last_snapshot"
+        self._attr_device_info = get_device_info(self._entry_id, self._ip)
 
         # Path to last snapshot file
         self._file_path: str | None = None

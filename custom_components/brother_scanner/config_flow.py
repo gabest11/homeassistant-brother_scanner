@@ -83,15 +83,33 @@ class BrotherScannerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
-    async def _async_create_entry_for_ip(self, ip: str):
-        """Validate IP and create the config entry."""
-        ip = normalize_address(ip)
+    async def _async_create_entry_for_ip(self, user_input_ip: str):
+        """Resolve IP and create config entry."""
+        # Normalize user input (IP or hostname)
+        normalized = normalize_address(user_input_ip)
+
+        # Resolve to IP if hostname
+        try:
+            ip = str(socket.gethostbyname(normalized))
+        except OSError:
+            ip = normalized  # Already an IP, fallback
+
+        # Use IP as unique ID
         await self.async_set_unique_id(ip)
         self._abort_if_unique_id_configured()
+
+        # Store user input (hostname or IP) for display, but IP remains unique ID
         return self.async_create_entry(
-            title=f"{MANUFACTURER} {MODEL} Scanner ({ip})",
-            data={"ip": ip},
+            title=f"{MANUFACTURER} {MODEL} Scanner ({user_input_ip})",
+            data={"ip": ip, "hostname": user_input_ip},
         )
+
+    def is_already_configured(self, ip: str | None) -> bool:
+        """Return True if a printer with IP is already configured."""
+        for entry in self._async_current_entries():
+            if ip and entry.data.get("ip") == ip:
+                return True
+        return False
 
     async def async_step_user(self, user_input=None):
         """Manual configuration or auto-detection."""
@@ -120,6 +138,10 @@ class BrotherScannerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if ip is None:
             ip = discovery_info.host  # fallback
 
+        if self.is_already_configured(ip):
+            _LOGGER.info("Printer %s already configured, skipping discovery", ip)
+            return self.async_abort(reason="already_configured")
+
         # Save for the confirm step
         self._discovered_ip = ip
 
@@ -132,7 +154,6 @@ class BrotherScannerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     async def _show_confirm_form(self, step_id: str, user_input=None):
-        """Confirm adding the Brother printer (manual or zeroconf)."""
         if user_input is not None:
             return await self._async_create_entry_for_ip(user_input["ip"])
 
